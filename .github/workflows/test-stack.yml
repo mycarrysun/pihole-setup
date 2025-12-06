@@ -104,6 +104,39 @@ jobs:
             exit 1
           fi
 
+      - name: Test watchdog service
+        run: |
+          echo "Installing and configuring watchdog..."
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq watchdog
+
+          # Install config with gateway IP substituted
+          GATEWAY=$(ip route | grep default | awk '{print $3}' | head -1)
+          echo "Using gateway IP: $GATEWAY"
+          sed "s/ROUTER_IP/${GATEWAY}/" watchdog.conf | sudo tee /etc/watchdog.conf > /dev/null
+
+          # Disable hardware watchdog device (not available in CI)
+          # but keep all other settings to validate the config
+          sudo sed -i 's/^watchdog-device/#watchdog-device/' /etc/watchdog.conf
+          sudo sed -i 's/^watchdog-timeout/#watchdog-timeout/' /etc/watchdog.conf
+
+          echo "Starting watchdog service..."
+          sudo systemctl start watchdog
+
+          # Give it a moment to start
+          sleep 3
+
+          echo "Checking watchdog service status..."
+          if sudo systemctl is-active --quiet watchdog; then
+            echo "Watchdog service is active!"
+            sudo systemctl status watchdog --no-pager
+          else
+            echo "ERROR: Watchdog service failed to start"
+            sudo systemctl status watchdog --no-pager
+            sudo journalctl -u watchdog --no-pager -n 50
+            exit 1
+          fi
+
       - name: Show container status
         if: always()
         run: docker compose ps

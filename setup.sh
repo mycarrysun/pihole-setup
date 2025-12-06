@@ -272,35 +272,8 @@ echo -e "${YELLOW}[7/8] Setting up hardware watchdog...${NC}"
 apt-get update -qq
 apt-get install -y -qq watchdog
 
-# Configure watchdog
-cat > /etc/watchdog.conf << EOF
-# Hardware watchdog configuration for Raspberry Pi
-# The Pi's hardware watchdog has a maximum timeout of 15 seconds
-# We use 14 to stay safely under the limit
-
-# Watchdog device
-watchdog-device = /dev/watchdog
-
-# Timeout (must be < 15 seconds on Raspberry Pi)
-watchdog-timeout = 14
-
-# Interval to reset the watchdog timer
-interval = 10
-
-# Load thresholds - reboot if 1-minute load exceeds this
-max-load-1 = 24
-
-# Network connectivity check - reboot if router unreachable
-ping = ${ROUTER_IP}
-ping-count = 3
-
-# Realtime scheduling for watchdog daemon
-realtime = yes
-priority = 1
-
-# Verbose logging (set to no for production)
-verbose = no
-EOF
+# Configure watchdog using template
+sed "s/ROUTER_IP/${ROUTER_IP}/" "$SCRIPT_DIR/watchdog.conf" > /etc/watchdog.conf
 
 # Enable watchdog service
 systemctl enable watchdog
