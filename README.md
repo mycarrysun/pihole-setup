@@ -102,9 +102,18 @@ should make that safe.
 
 ### Update Containers
 
+Container versions are pinned in `docker-compose.yml` for stability. Updates are handled automatically:
+
+1. **Renovate** monitors for new Pi-hole/Unbound versions
+2. Opens a PR when updates are available
+3. **GitHub Actions** tests the new versions
+4. Auto-merges if tests pass
+
+To manually update, edit the version in `docker-compose.yml`, then:
+
 ```bash
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 ```
 
 ### Update Root Hints
@@ -167,6 +176,8 @@ pihole-setup/
 ├── docker-compose.yml    # Main config (uses .env variables)
 ├── setup.sh              # Interactive setup script
 ├── .env                  # Configuration (created by setup.sh)
+├── renovate.json         # Automated dependency updates
+├── .github/workflows/    # CI tests for version updates
 ├── unbound/
 │   ├── unbound.conf      # Unbound configuration
 │   ├── root.hints        # Root DNS servers (created by setup.sh)

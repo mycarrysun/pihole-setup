@@ -1,0 +1,111 @@
+name: Test Docker Stack
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create test .env file
+        run: |
+          cat > .env << EOF
+          WEBPASSWORD=testpassword
+          TZ=UTC
+          PIHOLE_LOCAL_IP=127.0.0.1
+          PIHOLE_DNS_PORT=5353
+          PIHOLE_WEB_PORT=8080
+          EOF
+
+      - name: Create required directories and configure for testing
+        run: |
+          mkdir -p etc-pihole etc-dnsmasq.d
+          # Enable query logging for tests
+          sed -i 's/log-queries: no/log-queries: yes/' unbound/unbound.conf
+          curl -s -o unbound/root.hints https://www.internic.net/domain/named.root
+
+      - name: Start Docker Compose stack
+        run: docker compose up -d
+
+      - name: Wait for containers to be healthy
+        run: |
+          echo "Waiting for containers to become healthy..."
+          for i in {1..36}; do
+            UNBOUND_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' unbound 2>/dev/null || echo "starting")
+            PIHOLE_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' pihole 2>/dev/null || echo "starting")
+
+            echo "Attempt $i/36: unbound=$UNBOUND_HEALTH, pihole=$PIHOLE_HEALTH"
+
+            if [ "$UNBOUND_HEALTH" = "healthy" ] && [ "$PIHOLE_HEALTH" = "healthy" ]; then
+              echo "Both containers are healthy!"
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "Containers did not become healthy in time"
+          docker compose logs
+          exit 1
+
+      - name: Test Unbound DNS resolution
+        run: |
+          echo "Testing Unbound directly on port 5335..."
+          RESULT=$(dig @127.0.0.1 -p 5335 google.com +short +time=5 +tries=3)
+          if [ -z "$RESULT" ]; then
+            echo "Unbound DNS query failed"
+            docker logs unbound
+            exit 1
+          fi
+          echo "Unbound returned: $RESULT"
+
+      - name: Test Pi-hole DNS resolution
+        run: |
+          echo "Testing Pi-hole on port 5353..."
+          RESULT=$(dig @127.0.0.1 -p 5353 google.com +short +time=5 +tries=3)
+          if [ -z "$RESULT" ]; then
+            echo "Pi-hole DNS query failed"
+            docker logs pihole
+            exit 1
+          fi
+          echo "Pi-hole returned: $RESULT"
+
+      - name: Test Pi-hole web interface
+        run: |
+          echo "Testing Pi-hole web interface on port 8080..."
+          curl -sf http://127.0.0.1:8080/admin/ | grep -q "Pi-hole"
+          echo "Pi-hole web interface is responding correctly"
+
+      - name: Verify Pi-hole forwards to Unbound
+        run: |
+          echo "Verifying Pi-hole uses Unbound for resolution..."
+          # Query through Pi-hole and check Unbound logs show the query
+          dig @127.0.0.1 -p 5353 example.org +short
+          sleep 2
+          if docker logs unbound 2>&1 | grep -q "example.org"; then
+            echo "Confirmed: Pi-hole is forwarding to Unbound"
+          else
+            echo "ERROR: Pi-hole is not forwarding to Unbound"
+            docker logs unbound
+            exit 1
+          fi
+
+      - name: Show container status
+        if: always()
+        run: docker compose ps
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

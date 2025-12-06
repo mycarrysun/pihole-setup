@@ -233,8 +233,8 @@ fi
 echo ""
 echo -e "${YELLOW}[4/8] Creating Pi-hole directories...${NC}"
 
-mkdir -p etc-pihole etc-dnsmasq.d unbound
-chown -R "$ACTUAL_USER":"$ACTUAL_USER" etc-pihole etc-dnsmasq.d unbound
+mkdir -p etc-pihole etc-dnsmasq.d
+chown -R "$ACTUAL_USER":"$ACTUAL_USER" etc-pihole etc-dnsmasq.d
 
 # -------------------------------------------------------------------
 # Download root hints for Unbound
@@ -243,13 +243,7 @@ echo ""
 echo -e "${YELLOW}[5/8] Downloading DNS root hints...${NC}"
 
 curl -s -o unbound/root.hints https://www.internic.net/domain/named.root
-
-# Create empty root.key file (will be populated by Unbound on first run)
-touch unbound/root.key
-
-# Set permissions
-chmod -R 755 unbound
-chown -R "$ACTUAL_USER":"$ACTUAL_USER" unbound
+chown "$ACTUAL_USER":"$ACTUAL_USER" unbound/root.hints
 
 echo -e "${GREEN}Root hints downloaded.${NC}"
 
@@ -261,10 +255,10 @@ echo -e "${YELLOW}[6/8] Setting up monthly root hints update...${NC}"
 
 CRON_CMD="0 4 1 * * curl -s -o $SCRIPT_DIR/unbound/root.hints https://www.internic.net/domain/named.root && docker restart unbound 2>/dev/null || true"
 
-# Check if cron job already exists
-if ! crontab -l 2>/dev/null | grep -q "root.hints"; then
-    (crontab -l 2>/dev/null; echo "$CRON_CMD") | crontab -
-    echo -e "${GREEN}Monthly cron job added to update root hints.${NC}"
+# Check if cron job already exists (add to actual user's crontab, not root's)
+if ! crontab -u "$ACTUAL_USER" -l 2>/dev/null | grep -q "root.hints"; then
+    (crontab -u "$ACTUAL_USER" -l 2>/dev/null; echo "$CRON_CMD") | crontab -u "$ACTUAL_USER" -
+    echo -e "${GREEN}Monthly cron job added to $ACTUAL_USER's crontab.${NC}"
 else
     echo -e "${GREEN}Root hints cron job already exists.${NC}"
 fi

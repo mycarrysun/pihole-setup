@@ -1,15 +1,15 @@
 services:
   pihole:
     container_name: pihole
-    image: pihole/pihole:latest
+    image: pihole/pihole:2025.11.1
     hostname: pihole
     depends_on:
       unbound:
         condition: service_healthy
     ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "6161:80/tcp"
+      - "${PIHOLE_DNS_PORT:-53}:53/tcp"
+      - "${PIHOLE_DNS_PORT:-53}:53/udp"
+      - "${PIHOLE_WEB_PORT:-6161}:80/tcp"
     environment:
       TZ: '${TZ}'
       WEBPASSWORD: '${WEBPASSWORD}'
@@ -17,6 +17,7 @@ services:
       PIHOLE_DNS_: '10.0.0.2#5335'  # Points to Unbound container
       DNSSEC: 'true'
       DNSMASQ_LISTENING: 'all'
+      FTLCONF_MAXDBDAYS: '7'  # Keep only 7 days of query logs
     volumes:
       - './etc-pihole:/etc/pihole'
       - './etc-dnsmasq.d:/etc/dnsmasq.d'
@@ -24,6 +25,11 @@ services:
       pihole_net:
         ipv4_address: 10.0.0.3
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "dig", "+short", "+norecurse", "+retry=0", "@127.0.0.1", "pi.hole"]
       interval: 30s
@@ -33,7 +39,7 @@ services:
 
   unbound:
     container_name: unbound
-    image: mvance/unbound:latest
+    image: mvance/unbound:1.21.1
     hostname: unbound
     volumes:
       - './unbound:/opt/unbound/etc/unbound'
@@ -44,6 +50,11 @@ services:
       - "5335:5335/tcp"
       - "5335:5335/udp"
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "drill", "@127.0.0.1", "-p", "5335", "cloudflare.com"]
       interval: 30s
@@ -53,6 +64,7 @@ services:
 
 networks:
   pihole_net:
+    name: pihole_net
     driver: bridge
     ipam:
       config:

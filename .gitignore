@@ -1,2 +1,13 @@
 .idea
 .env
+
+# Runtime directories (created by Docker/setup.sh)
+etc-pihole/
+etc-dnsmasq.d/
+
+# Unbound runtime files (created by container)
+unbound/var/
+unbound/dev/
+unbound/root.hints
+unbound/root.key
+unbound/unbound.pid
