@@ -56,11 +56,11 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "dig", "+short", "+time=3", "+tries=1", "@127.0.0.1", "-p", "5335", "cloudflare.com"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "drill", "@127.0.0.1", "-p", "5335", "cloudflare.com"]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 10s
 
 networks:
   pihole_net:
