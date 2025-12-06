@@ -33,54 +33,39 @@ cd pihole-setup
 # Run the setup script (requires sudo)
 chmod +x setup.sh
 sudo ./setup.sh
-
-# Edit docker-compose.yml with your settings
-nano docker-compose.yml
-
-# Start it up
-docker-compose up -d
 ```
 
-The setup script will:
-- Check for and optionally install Docker
-- Disable systemd-resolved if it's conflicting with port 53
-- Install and configure the hardware watchdog
-- Create necessary directories
-- Download DNS root hints
-- Set up a monthly cron job to update root hints
-- Enable Docker to start on boot
-
-## Configuration Checklist
-
-Edit `docker-compose.yml` and change:
-
-| Setting | What to set |
-|---------|-------------|
-| `TZ` | Your timezone, e.g., `America/Chicago` |
-| `WEBPASSWORD` | Password for Pi-hole web UI |
-| `FTLCONF_LOCAL_IPV4` | Your Pi's static IP address |
+The setup script handles everything interactively:
+- Prompts for Pi-hole web password
+- Auto-detects timezone, Pi IP, and router IP (with confirmation)
+- Prompts for local DNS records (NAT loopback) with wildcard subdomain support
+- Installs Docker if needed
+- Configures hardware watchdog with network ping monitoring
+- Downloads DNS root hints and sets up monthly updates
+- Starts the containers automatically
 
 ## NAT Loopback / Hairpin NAT Fix
 
-Since you're using Pi-hole to fix NAT loopback issues, add local DNS records for your internal services:
+The setup script prompts you to add local DNS records for NAT loopback. These are stored in `etc-dnsmasq.d/02-custom-dns.conf`.
 
-1. Open Pi-hole admin: `http://your-pi-ip/admin`
+To add more records later:
+1. Open Pi-hole admin: `http://your-pi-ip:6161/admin`
 2. Go to **Local DNS → DNS Records**
-3. Add entries for your internal services:
-    - `nas.yourdomain.com` → `192.168.1.x`
-    - `plex.yourdomain.com` → `192.168.1.x`
-    - etc.
+3. Add entries for your internal services
 
-This way, internal requests resolve directly to the local IP instead of going out and trying to hairpin back.
+For wildcard subdomains (e.g., `*.example.com`), edit `etc-dnsmasq.d/02-custom-dns.conf` directly:
+```
+address=/example.com/192.168.1.x
+```
+Then restart Pi-hole: `docker restart pihole`
 
 ## Hardware Watchdog
 
-The setup script automatically configures the Pi 4's hardware watchdog. This will reboot the system if it locks up completely.
+The setup script configures the Pi 4's hardware watchdog with:
+- **Hardware timeout**: Reboots if system locks up (14 second timeout)
+- **Network ping**: Reboots if router becomes unreachable
 
-**Important notes:**
-- The Pi's hardware watchdog has a maximum timeout of 15 seconds
-- We use 14 seconds to stay safely under the limit
-- The watchdog is configured in `/etc/watchdog.conf`
+The watchdog config is at `/etc/watchdog.conf`.
 
 To verify the watchdog is running:
 
@@ -179,14 +164,16 @@ docker logs --tail 50 unbound
 
 ```
 pihole-setup/
-├── docker-compose.yml    # Main config
-├── setup.sh              # Initial setup script
+├── docker-compose.yml    # Main config (uses .env variables)
+├── setup.sh              # Interactive setup script
+├── .env                  # Configuration (created by setup.sh)
 ├── unbound/
 │   ├── unbound.conf      # Unbound configuration
 │   ├── root.hints        # Root DNS servers (created by setup.sh)
 │   └── root.key          # DNSSEC trust anchor (auto-managed)
 ├── etc-pihole/           # Pi-hole data (created on first run)
-└── etc-dnsmasq.d/        # dnsmasq overrides (created on first run)
+└── etc-dnsmasq.d/
+    └── 02-custom-dns.conf  # Local DNS records (created by setup.sh)
 ```
 
 ## Useful Commands
