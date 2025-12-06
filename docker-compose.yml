@@ -39,10 +39,11 @@ services:
 
   unbound:
     container_name: unbound
-    image: mvance/unbound:1.21.1
+    image: klutchell/unbound:1.22.0
     hostname: unbound
     volumes:
-      - './unbound:/opt/unbound/etc/unbound'
+      - './unbound/unbound.conf:/etc/unbound/custom.conf.d/unbound.conf:ro'
+      - './unbound/root.hints:/etc/unbound/root.hints:ro'
     networks:
       pihole_net:
         ipv4_address: 10.0.0.2
@@ -56,11 +57,11 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "drill", "@127.0.0.1", "-p", "5335", "cloudflare.com"]
+      test: ["CMD", "dig", "+short", "+time=3", "+tries=1", "@127.0.0.1", "-p", "5335", "cloudflare.com"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
 networks:
   pihole_net:

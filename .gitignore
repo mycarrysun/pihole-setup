@@ -5,9 +5,5 @@
 etc-pihole/
 etc-dnsmasq.d/
 
-# Unbound runtime files (created by container)
-unbound/var/
-unbound/dev/
+# Unbound runtime files (downloaded by setup.sh)
 unbound/root.hints
-unbound/root.key
-unbound/unbound.pid
