@@ -11,7 +11,7 @@ services:
       - "53:53/udp"
       - "6161:80/tcp"
     environment:
-      TZ: 'America/New_York'  # Change to your timezone
+      TZ: 'America/New_York'
       WEBPASSWORD: 'changeme'  # Change this!
       FTLCONF_LOCAL_IPV4: '192.168.1.x'  # Set to your Pi's static IP
       PIHOLE_DNS_: '10.0.0.2#5335'  # Points to Unbound container

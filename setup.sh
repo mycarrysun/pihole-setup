@@ -27,22 +27,15 @@ ACTUAL_USER=${SUDO_USER:-$USER}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # -------------------------------------------------------------------
-# 1. Check for Docker
+# Check for Docker
 # -------------------------------------------------------------------
 echo -e "${YELLOW}[1/7] Checking for Docker...${NC}"
 if ! command -v docker &> /dev/null; then
     echo -e "${RED}Docker is not installed.${NC}"
-    read -p "Would you like to install Docker now? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "Installing Docker..."
-        curl -fsSL https://get.docker.com | sh
-        usermod -aG docker "$ACTUAL_USER"
-        echo -e "${GREEN}Docker installed. You may need to log out and back in for group membership.${NC}"
-    else
-        echo "Please install Docker manually and re-run this script."
-        exit 1
-    fi
+    echo "Installing Docker..."
+    curl -fsSL https://get.docker.com | sh
+    usermod -aG docker "$ACTUAL_USER"
+    echo -e "${GREEN}Docker installed. You may need to log out and back in for group membership.${NC}"
 else
     echo -e "${GREEN}Docker is installed.${NC}"
 fi
@@ -55,35 +48,7 @@ if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/
 fi
 
 # -------------------------------------------------------------------
-# 2. Disable systemd-resolved if it's using port 53
-# -------------------------------------------------------------------
-echo ""
-echo -e "${YELLOW}[2/7] Checking for port 53 conflicts...${NC}"
-if systemctl is-active --quiet systemd-resolved; then
-    echo "systemd-resolved is running and may conflict with Pi-hole."
-    read -p "Disable systemd-resolved? (recommended) (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        systemctl disable systemd-resolved
-        systemctl stop systemd-resolved
-
-        # Backup and replace resolv.conf
-        if [ -L /etc/resolv.conf ]; then
-            rm /etc/resolv.conf
-        elif [ -f /etc/resolv.conf ]; then
-            cp /etc/resolv.conf /etc/resolv.conf.backup
-        fi
-
-        echo "nameserver 1.1.1.1" > /etc/resolv.conf
-        echo "nameserver 8.8.8.8" >> /etc/resolv.conf
-        echo -e "${GREEN}systemd-resolved disabled.${NC}"
-    fi
-else
-    echo -e "${GREEN}systemd-resolved is not running. No conflicts.${NC}"
-fi
-
-# -------------------------------------------------------------------
-# 3. Set up hardware watchdog
+# Set up hardware watchdog
 # -------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW}[3/7] Setting up hardware watchdog...${NC}"
@@ -138,7 +103,7 @@ systemctl start watchdog
 echo -e "${GREEN}Hardware watchdog configured and enabled.${NC}"
 
 # -------------------------------------------------------------------
-# 4. Create Pi-hole directories
+# Create Pi-hole directories
 # -------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW}[4/7] Creating Pi-hole directories...${NC}"
@@ -147,7 +112,7 @@ cd "$SCRIPT_DIR"
 mkdir -p etc-pihole etc-dnsmasq.d unbound
 
 # -------------------------------------------------------------------
-# 5. Download root hints for Unbound
+# Download root hints for Unbound
 # -------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW}[5/7] Downloading DNS root hints...${NC}"
@@ -164,7 +129,7 @@ chown -R "$ACTUAL_USER":"$ACTUAL_USER" etc-pihole etc-dnsmasq.d unbound
 echo -e "${GREEN}Root hints downloaded.${NC}"
 
 # -------------------------------------------------------------------
-# 6. Set up monthly cron job to update root hints
+# Set up monthly cron job to update root hints
 # -------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW}[6/7] Setting up monthly root hints update...${NC}"
@@ -180,7 +145,7 @@ else
 fi
 
 # -------------------------------------------------------------------
-# 7. Set up Docker restart policy via systemd (belt and suspenders)
+# Set up Docker restart policy via systemd (belt and suspenders)
 # -------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW}[7/7] Configuring Docker to start on boot...${NC}"
