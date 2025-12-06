@@ -44,6 +44,12 @@ jobs:
 
             echo "Attempt $i/36: unbound=$UNBOUND_HEALTH, pihole=$PIHOLE_HEALTH"
 
+            # Show healthcheck logs if unhealthy
+            if [ "$UNBOUND_HEALTH" = "unhealthy" ]; then
+              echo "Unbound healthcheck logs:"
+              docker inspect --format='{{range .State.Health.Log}}{{.Output}}{{end}}' unbound 2>/dev/null || true
+            fi
+
             if [ "$UNBOUND_HEALTH" = "healthy" ] && [ "$PIHOLE_HEALTH" = "healthy" ]; then
               echo "Both containers are healthy!"
               exit 0
@@ -53,6 +59,9 @@ jobs:
           done
 
           echo "Containers did not become healthy in time"
+          echo "=== Unbound healthcheck logs ==="
+          docker inspect --format='{{json .State.Health}}' unbound 2>/dev/null | jq . || true
+          echo "=== Container logs ==="
           docker compose logs
           exit 1
 
@@ -172,4 +181,15 @@ jobs:
 
       - name: Show logs on failure
         if: failure()
-        run: docker compose logs
+        run: |
+          echo "=== Container status ==="
+          docker compose ps -a
+          echo ""
+          echo "=== Unbound healthcheck logs ==="
+          docker inspect --format='{{json .State.Health}}' unbound 2>/dev/null | jq . || true
+          echo ""
+          echo "=== Test healthcheck manually ==="
+          docker exec unbound drill @127.0.0.1 -p 5335 cloudflare.com 2>&1 || true
+          echo ""
+          echo "=== Container logs ==="
+          docker compose logs
