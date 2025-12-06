@@ -12,12 +12,12 @@ services:
       - "${PIHOLE_WEB_PORT:-6161}:80/tcp"
     environment:
       TZ: '${TZ}'
-      WEBPASSWORD: '${WEBPASSWORD}'
-      FTLCONF_LOCAL_IPV4: '${PIHOLE_LOCAL_IP}'
-      PIHOLE_DNS_: '10.0.0.2#5335'  # Points to Unbound container
-      DNSSEC: 'true'
-      DNSMASQ_LISTENING: 'all'
-      FTLCONF_MAXDBDAYS: '7'  # Keep only 7 days of query logs
+      # Pi-hole v6 environment variables
+      FTLCONF_webserver_api_password: '${WEBPASSWORD}'
+      FTLCONF_dns_upstreams: '10.0.0.2#5335'  # Points to Unbound container
+      FTLCONF_dns_dnssec: 'true'
+      FTLCONF_dns_listeningMode: 'all'
+      FTLCONF_misc_databaseDays: '7'  # Keep only 7 days of query logs
     volumes:
       - './etc-pihole:/etc/pihole'
       - './etc-dnsmasq.d:/etc/dnsmasq.d'
