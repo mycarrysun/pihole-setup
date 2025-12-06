@@ -80,8 +80,15 @@ jobs:
       - name: Test Pi-hole web interface
         run: |
           echo "Testing Pi-hole web interface on port 8080..."
-          curl -sf http://127.0.0.1:8080/admin/ | grep -q "Pi-hole"
-          echo "Pi-hole web interface is responding correctly"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/admin/)
+          echo "HTTP response code: $HTTP_CODE"
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ] || [ "$HTTP_CODE" = "301" ]; then
+            echo "Pi-hole web interface is responding correctly"
+          else
+            echo "ERROR: Unexpected HTTP code $HTTP_CODE"
+            curl -v http://127.0.0.1:8080/admin/ 2>&1 | head -30
+            exit 1
+          fi
 
       - name: Verify Pi-hole forwards to Unbound
         run: |

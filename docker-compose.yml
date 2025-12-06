@@ -17,7 +17,7 @@ services:
       FTLCONF_dns_upstreams: '10.0.0.2#5335'  # Points to Unbound container
       FTLCONF_dns_dnssec: 'true'
       FTLCONF_dns_listeningMode: 'all'
-      FTLCONF_misc_databaseDays: '7'  # Keep only 7 days of query logs
+      FTLCONF_database_maxDBdays: '7'  # Keep only 7 days of query logs
     volumes:
       - './etc-pihole:/etc/pihole'
       - './etc-dnsmasq.d:/etc/dnsmasq.d'
