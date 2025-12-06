@@ -120,6 +120,10 @@ jobs:
           sudo sed -i 's/^watchdog-device/#watchdog-device/' /etc/watchdog.conf
           sudo sed -i 's/^watchdog-timeout/#watchdog-timeout/' /etc/watchdog.conf
 
+          # Install the test script
+          sudo cp watchdog-test.sh /usr/local/bin/watchdog-test.sh
+          sudo chmod +x /usr/local/bin/watchdog-test.sh
+
           echo "Starting watchdog service..."
           sudo systemctl start watchdog
 
@@ -136,6 +140,30 @@ jobs:
             sudo journalctl -u watchdog --no-pager -n 50
             exit 1
           fi
+
+      - name: Test watchdog health check script
+        run: |
+          echo "Testing watchdog-test.sh with healthy containers..."
+          if /usr/local/bin/watchdog-test.sh; then
+            echo "Health check passed!"
+          else
+            echo "ERROR: Health check failed with healthy containers"
+            exit 1
+          fi
+
+          echo "Testing watchdog-test.sh detects unhealthy container..."
+          docker stop pihole
+          if /usr/local/bin/watchdog-test.sh; then
+            echo "ERROR: Health check should have failed with stopped container"
+            docker start pihole
+            exit 1
+          else
+            echo "Health check correctly detected stopped container"
+          fi
+
+          # Restart for remaining tests
+          docker start pihole
+          sleep 5
 
       - name: Show container status
         if: always()

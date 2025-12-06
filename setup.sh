@@ -275,6 +275,10 @@ apt-get install -y -qq watchdog
 # Configure watchdog using template
 sed "s/ROUTER_IP/${ROUTER_IP}/" "$SCRIPT_DIR/watchdog.conf" > /etc/watchdog.conf
 
+# Install watchdog test script for container health monitoring
+cp "$SCRIPT_DIR/watchdog-test.sh" /usr/local/bin/watchdog-test.sh
+chmod +x /usr/local/bin/watchdog-test.sh
+
 # Enable watchdog service
 systemctl enable watchdog
 systemctl start watchdog
