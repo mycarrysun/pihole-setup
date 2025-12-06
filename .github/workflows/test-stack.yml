@@ -189,7 +189,7 @@ jobs:
           docker inspect --format='{{json .State.Health}}' unbound 2>/dev/null | jq . || true
           echo ""
           echo "=== Test healthcheck manually ==="
-          docker exec unbound drill @127.0.0.1 -p 5335 cloudflare.com 2>&1 || true
+          docker exec unbound drill @127.0.0.1 cloudflare.com 2>&1 || true
           echo ""
           echo "=== Container logs ==="
           docker compose logs
