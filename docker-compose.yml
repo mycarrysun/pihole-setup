@@ -1,0 +1,60 @@
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    hostname: pihole
+    depends_on:
+      unbound:
+        condition: service_healthy
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "6161:80/tcp"
+    environment:
+      TZ: 'America/New_York'  # Change to your timezone
+      WEBPASSWORD: 'changeme'  # Change this!
+      FTLCONF_LOCAL_IPV4: '192.168.1.x'  # Set to your Pi's static IP
+      PIHOLE_DNS_: '10.0.0.2#5335'  # Points to Unbound container
+      DNSSEC: 'true'
+      DNSMASQ_LISTENING: 'all'
+    volumes:
+      - './etc-pihole:/etc/pihole'
+      - './etc-dnsmasq.d:/etc/dnsmasq.d'
+    networks:
+      pihole_net:
+        ipv4_address: 10.0.0.3
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "dig", "+short", "+norecurse", "+retry=0", "@127.0.0.1", "pi.hole"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  unbound:
+    container_name: unbound
+    image: mvance/unbound:latest
+    hostname: unbound
+    volumes:
+      - './unbound:/opt/unbound/etc/unbound'
+    networks:
+      pihole_net:
+        ipv4_address: 10.0.0.2
+    ports:
+      - "5335:5335/tcp"
+      - "5335:5335/udp"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "drill", "@127.0.0.1", "-p", "5335", "cloudflare.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  pihole_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/24
+          gateway: 10.0.0.1
