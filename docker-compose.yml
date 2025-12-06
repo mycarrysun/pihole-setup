@@ -43,7 +43,6 @@ services:
     hostname: unbound
     volumes:
       - './unbound/unbound.conf:/etc/unbound/custom.conf.d/unbound.conf:ro'
-      - './unbound/root.hints:/etc/unbound/root.hints:ro'
     networks:
       pihole_net:
         ipv4_address: 10.0.0.2

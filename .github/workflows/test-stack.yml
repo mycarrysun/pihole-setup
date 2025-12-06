@@ -29,10 +29,8 @@ jobs:
           mkdir -p etc-pihole etc-dnsmasq.d
           # Enable query logging for tests
           sed -i 's/log-queries: no/log-queries: yes/' unbound/unbound.conf
-          # Download root hints
-          curl -s -o unbound/root.hints https://www.internic.net/domain/named.root
           # Make config readable by unbound user (uid 101)
-          chmod 644 unbound/unbound.conf unbound/root.hints
+          chmod 644 unbound/unbound.conf
 
       - name: Start Docker Compose stack
         run: docker compose up -d

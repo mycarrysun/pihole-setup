@@ -4,6 +4,3 @@
 # Runtime directories (created by Docker/setup.sh)
 etc-pihole/
 etc-dnsmasq.d/
-
-# Unbound runtime files (downloaded by setup.sh)
-unbound/root.hints

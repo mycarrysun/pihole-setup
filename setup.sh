@@ -29,7 +29,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # -------------------------------------------------------------------
 # Check for Docker
 # -------------------------------------------------------------------
-echo -e "${YELLOW}[1/8] Checking for Docker...${NC}"
+echo -e "${YELLOW}[1/6] Checking for Docker...${NC}"
 if ! command -v docker &> /dev/null; then
     echo -e "${RED}Docker is not installed.${NC}"
     echo "Installing Docker..."
@@ -51,7 +51,7 @@ fi
 # Collect User Input
 # -------------------------------------------------------------------
 echo ""
-echo -e "${YELLOW}[2/8] Collecting configuration...${NC}"
+echo -e "${YELLOW}[2/6] Collecting configuration...${NC}"
 echo ""
 
 # --- Pi-hole Web Password ---
@@ -203,7 +203,7 @@ fi
 # Write Configuration Files
 # -------------------------------------------------------------------
 echo ""
-echo -e "${YELLOW}[3/8] Writing configuration files...${NC}"
+echo -e "${YELLOW}[3/6] Writing configuration files...${NC}"
 
 cd "$SCRIPT_DIR"
 
@@ -230,43 +230,16 @@ fi
 # Create Pi-hole directories
 # -------------------------------------------------------------------
 echo ""
-echo -e "${YELLOW}[4/8] Creating Pi-hole directories...${NC}"
+echo -e "${YELLOW}[4/6] Creating Pi-hole directories...${NC}"
 
 mkdir -p etc-pihole etc-dnsmasq.d
 chown -R "$ACTUAL_USER":"$ACTUAL_USER" etc-pihole etc-dnsmasq.d
 
 # -------------------------------------------------------------------
-# Download root hints for Unbound
-# -------------------------------------------------------------------
-echo ""
-echo -e "${YELLOW}[5/8] Downloading DNS root hints...${NC}"
-
-curl -s -o unbound/root.hints https://www.internic.net/domain/named.root
-chown "$ACTUAL_USER":"$ACTUAL_USER" unbound/root.hints
-
-echo -e "${GREEN}Root hints downloaded.${NC}"
-
-# -------------------------------------------------------------------
-# Set up monthly cron job to update root hints
-# -------------------------------------------------------------------
-echo ""
-echo -e "${YELLOW}[6/8] Setting up monthly root hints update...${NC}"
-
-CRON_CMD="0 4 1 * * curl -s -o $SCRIPT_DIR/unbound/root.hints https://www.internic.net/domain/named.root && docker restart unbound 2>/dev/null || true"
-
-# Check if cron job already exists (add to actual user's crontab, not root's)
-if ! crontab -u "$ACTUAL_USER" -l 2>/dev/null | grep -q "root.hints"; then
-    (crontab -u "$ACTUAL_USER" -l 2>/dev/null; echo "$CRON_CMD") | crontab -u "$ACTUAL_USER" -
-    echo -e "${GREEN}Monthly cron job added to $ACTUAL_USER's crontab.${NC}"
-else
-    echo -e "${GREEN}Root hints cron job already exists.${NC}"
-fi
-
-# -------------------------------------------------------------------
 # Set up hardware watchdog with network ping
 # -------------------------------------------------------------------
 echo ""
-echo -e "${YELLOW}[7/8] Setting up hardware watchdog...${NC}"
+echo -e "${YELLOW}[5/6] Setting up hardware watchdog...${NC}"
 
 # Install watchdog package
 apt-get update -qq
@@ -289,7 +262,7 @@ echo -e "${GREEN}Hardware watchdog configured with network ping to ${ROUTER_IP}.
 # Configure Docker to start on boot
 # -------------------------------------------------------------------
 echo ""
-echo -e "${YELLOW}[8/8] Configuring Docker and starting containers...${NC}"
+echo -e "${YELLOW}[6/6] Configuring Docker and starting containers...${NC}"
 
 systemctl enable docker
 
