@@ -114,6 +114,40 @@ jobs:
             exit 1
           fi
 
+      - name: Test custom DNS records from etc-dnsmasq.d
+        run: |
+          echo "Creating custom DNS record for testing..."
+          echo "address=/test.local/192.168.99.99" > etc-dnsmasq.d/02-custom-dns.conf
+
+          echo "Restarting Pi-hole to pick up custom DNS..."
+          docker restart pihole
+          sleep 10
+
+          # Wait for pihole to be healthy again
+          for i in {1..12}; do
+            PIHOLE_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' pihole 2>/dev/null || echo "starting")
+            echo "Waiting for pihole: $PIHOLE_HEALTH (attempt $i/12)"
+            if [ "$PIHOLE_HEALTH" = "healthy" ]; then
+              break
+            fi
+            sleep 5
+          done
+
+          echo "Testing custom DNS resolution..."
+          RESULT=$(dig @127.0.0.1 -p 5353 test.local +short +time=5 +tries=3)
+          echo "Result: '$RESULT'"
+
+          if [ "$RESULT" = "192.168.99.99" ]; then
+            echo "SUCCESS: Custom DNS record resolved correctly"
+          else
+            echo "FAILURE: Expected 192.168.99.99, got '$RESULT'"
+            echo "=== Pi-hole logs ==="
+            docker logs pihole --tail 50
+            echo "=== Checking if file is mounted ==="
+            docker exec pihole cat /etc/dnsmasq.d/02-custom-dns.conf
+            exit 1
+          fi
+
       - name: Test watchdog service
         run: |
           echo "Installing and configuring watchdog..."

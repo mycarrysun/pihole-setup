@@ -18,6 +18,7 @@ services:
       FTLCONF_dns_dnssec: 'true'
       FTLCONF_dns_listeningMode: 'all'
       FTLCONF_database_maxDBdays: '7'  # Keep only 7 days of query logs
+      FTLCONF_misc_etc_dnsmasq_d: 'true'  # Enable etc-dnsmasq.d for custom DNS records
     volumes:
       - './etc-pihole:/etc/pihole'
       - './etc-dnsmasq.d:/etc/dnsmasq.d'
