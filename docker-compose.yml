@@ -15,7 +15,7 @@ services:
       # Pi-hole v6 environment variables
       FTLCONF_webserver_api_password: '${WEBPASSWORD}'
       FTLCONF_dns_upstreams: '10.0.0.2'  # Points to Unbound container (port 53)
-      FTLCONF_dns_dnssec: 'true'
+      FTLCONF_dns_dnssec: 'false'  # Unbound validates DNSSEC; a second check in Pi-hole fails intermittently (Slack SERVFAIL "bogus")
       FTLCONF_dns_listeningMode: 'all'
       FTLCONF_database_maxDBdays: '7'  # Keep only 7 days of query logs
       FTLCONF_misc_etc_dnsmasq_d: 'true'  # Enable etc-dnsmasq.d for custom DNS records
